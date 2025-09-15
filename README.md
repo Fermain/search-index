@@ -36,11 +36,13 @@ Notes:
 - `content` is either a 40‑word excerpt or the full stripped body (HTML removed), based on settings.
 - Dates are intentionally omitted.
 - URLs are root‑relative.
+ - Shortcodes are removed from content prior to stripping HTML.
 
 ## Settings
 
 Tools → Search Index → Settings:
 - Content included in index: “Excerpt” (default) or “Full body (stripped)”.
+ - Truncate to N words: integer, 0 for no truncation. Applies to both modes.
 
 ## Regeneration
 

@@ -102,6 +102,7 @@ class Plugin {
         echo '<hr />';
         echo '<h2>Settings</h2>';
         $mode = \get_option( 'search_index_content_mode', 'excerpt' );
+        $truncate = (int) \get_option( 'search_index_truncate_words', 40 );
         echo '<form method="post" action="' . esc_url( \admin_url( 'admin-post.php' ) ) . '" class="card">';
         echo '<input type="hidden" name="action" value="search_index_save" />';
         \wp_nonce_field( 'search-index-save' );
@@ -112,6 +113,10 @@ class Plugin {
         echo '<label><input type="radio" name="search_index_content_mode" value="full" ' . checked( $mode, 'full', false ) . ' /> <span>Full body (stripped)</span></label>';
         echo '<p class="description">Choose the content field exposed in index.json. Dates are omitted; links are root-relative.</p>';
         echo '</fieldset>';
+        echo '</td></tr>';
+        echo '<tr><th scope="row">Truncate to N words</th><td>';
+        echo '<input name="search_index_truncate_words" type="number" min="0" step="1" value="' . esc_attr( (string) $truncate ) . '" class="small-text" /> ';
+        echo '<p class="description">0 for no truncation. Applies to both excerpt and full modes.</p>';
         echo '</td></tr>';
         echo '</tbody></table>';
         submit_button( 'Save settings' );
@@ -134,6 +139,9 @@ class Plugin {
         $mode = isset( $_POST['search_index_content_mode'] ) ? (string) $_POST['search_index_content_mode'] : 'excerpt';
         if ( $mode !== 'excerpt' && $mode !== 'full' ) { $mode = 'excerpt'; }
         \update_option( 'search_index_content_mode', $mode );
+        $truncate = isset( $_POST['search_index_truncate_words'] ) ? (int) $_POST['search_index_truncate_words'] : 40;
+        if ( $truncate < 0 ) { $truncate = 0; }
+        \update_option( 'search_index_truncate_words', $truncate );
         \wp_safe_redirect( \admin_url( 'tools.php?page=search-index' ) );
         exit;
     }

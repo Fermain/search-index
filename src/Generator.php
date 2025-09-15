@@ -60,7 +60,8 @@ class Generator {
 
         $title = \wp_strip_all_tags( \get_the_title( $post_id ) );
         $content_mode = \get_option( 'search_index_content_mode', 'excerpt' );
-        $content = $content_mode === 'full' ? $this->makeFull( $post ) : $this->makeExcerpt( $post );
+        $truncate = (int) \get_option( 'search_index_truncate_words', 40 );
+        $content = $content_mode === 'full' ? $this->makeFull( $post, $truncate ) : $this->makeExcerpt( $post, $truncate );
         $permalink = \get_permalink( $post_id );
         $root_relative = is_string( $permalink ) ? parse_url( $permalink, PHP_URL_PATH ) : '';
         $slug = $post->post_name;
@@ -79,25 +80,36 @@ class Generator {
         ];
     }
 
-    private function makeExcerpt( $post ) : string {
+    private function makeExcerpt( $post, int $truncate_words ) : string {
         if ( ! is_object( $post ) ) { return ''; }
         $raw = isset( $post->post_excerpt ) && $post->post_excerpt !== '' ? $post->post_excerpt : ( isset( $post->post_content ) ? $post->post_content : '' );
+        // Remove shortcodes and HTML
+        $raw = \strip_shortcodes( $raw );
         $text = \wp_strip_all_tags( $raw );
         $text = trim( preg_replace( '/\s+/', ' ', $text ) );
-        $words = explode( ' ', $text );
-        $limit = 40;
-        if ( count( $words ) > $limit ) {
-            $words = array_slice( $words, 0, $limit );
-            $text = implode( ' ', $words ) . '…';
+        if ( $truncate_words > 0 ) {
+            $words = explode( ' ', $text );
+            if ( count( $words ) > $truncate_words ) {
+                $words = array_slice( $words, 0, $truncate_words );
+                $text = implode( ' ', $words ) . '…';
+            }
         }
         return $text;
     }
 
-    private function makeFull( $post ) : string {
+    private function makeFull( $post, int $truncate_words ) : string {
         if ( ! is_object( $post ) ) { return ''; }
         $raw = isset( $post->post_content ) ? $post->post_content : '';
+        $raw = \strip_shortcodes( $raw );
         $text = \wp_strip_all_tags( $raw );
         $text = trim( preg_replace( '/\s+/', ' ', $text ) );
+        if ( $truncate_words > 0 ) {
+            $words = explode( ' ', $text );
+            if ( count( $words ) > $truncate_words ) {
+                $words = array_slice( $words, 0, $truncate_words );
+                $text = implode( ' ', $words ) . '…';
+            }
+        }
         return $text;
     }
 
