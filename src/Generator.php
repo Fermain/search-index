@@ -83,8 +83,8 @@ class Generator {
     private function makeExcerpt( $post, int $truncate_words ) : string {
         if ( ! is_object( $post ) ) { return ''; }
         $raw = isset( $post->post_excerpt ) && $post->post_excerpt !== '' ? $post->post_excerpt : ( isset( $post->post_content ) ? $post->post_content : '' );
-        // Remove shortcodes and HTML
         $raw = \strip_shortcodes( $raw );
+        $raw = $this->applyUserStripRegex( $raw );
         $text = \wp_strip_all_tags( $raw );
         $text = trim( preg_replace( '/\s+/', ' ', $text ) );
         if ( $truncate_words > 0 ) {
@@ -101,6 +101,7 @@ class Generator {
         if ( ! is_object( $post ) ) { return ''; }
         $raw = isset( $post->post_content ) ? $post->post_content : '';
         $raw = \strip_shortcodes( $raw );
+        $raw = $this->applyUserStripRegex( $raw );
         $text = \wp_strip_all_tags( $raw );
         $text = trim( preg_replace( '/\s+/', ' ', $text ) );
         if ( $truncate_words > 0 ) {
@@ -109,6 +110,14 @@ class Generator {
                 $words = array_slice( $words, 0, $truncate_words );
                 $text = implode( ' ', $words ) . '…';
             }
+        }
+        return $text;
+    }
+
+    private function applyUserStripRegex( string $text ) : string {
+        $pattern = (string) \get_option( 'search_index_strip_regex', '' );
+        if ( $pattern !== '' ) {
+            $text = (string) @preg_replace( $pattern, '', $text );
         }
         return $text;
     }

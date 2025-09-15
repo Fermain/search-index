@@ -16,6 +16,11 @@ class Plugin {
     }
 
     public static function activate() : void {
+        // Seed a sensible default strip regex if not already set
+        $existing = \get_option( 'search_index_strip_regex', null );
+        if ( $existing === null || $existing === '' ) {
+            \update_option( 'search_index_strip_regex', '/\\[(?:\\/)?vc_[^\\]]*\\]/i' );
+        }
         self::rebuild();
     }
 
@@ -103,6 +108,8 @@ class Plugin {
         echo '<h2>Settings</h2>';
         $mode = \get_option( 'search_index_content_mode', 'excerpt' );
         $truncate = (int) \get_option( 'search_index_truncate_words', 40 );
+        $strip_regex = (string) \get_option( 'search_index_strip_regex', '' );
+        $display_regex = $strip_regex !== '' ? $strip_regex : '/\\\[(?:\\\/)?vc_[^\\\]]*\\\]/i';
         echo '<form method="post" action="' . esc_url( \admin_url( 'admin-post.php' ) ) . '" class="card">';
         echo '<input type="hidden" name="action" value="search_index_save" />';
         \wp_nonce_field( 'search-index-save' );
@@ -117,6 +124,10 @@ class Plugin {
         echo '<tr><th scope="row">Truncate to N words</th><td>';
         echo '<input name="search_index_truncate_words" type="number" min="0" step="1" value="' . esc_attr( (string) $truncate ) . '" class="small-text" /> ';
         echo '<p class="description">0 for no truncation. Applies to both excerpt and full modes.</p>';
+        echo '</td></tr>';
+        echo '<tr><th scope="row">Strip pattern (regex)</th><td>';
+        echo '<input name="search_index_strip_regex" type="text" value="' . esc_attr( $display_regex ) . '" class="regular-text code" /> ';
+        echo '<p class="description">Optional PCRE applied before HTML stripping. Leave blank to disable.</p>';
         echo '</td></tr>';
         echo '</tbody></table>';
         submit_button( 'Save settings' );
@@ -142,6 +153,13 @@ class Plugin {
         $truncate = isset( $_POST['search_index_truncate_words'] ) ? (int) $_POST['search_index_truncate_words'] : 40;
         if ( $truncate < 0 ) { $truncate = 0; }
         \update_option( 'search_index_truncate_words', $truncate );
+        $strip_regex = isset( $_POST['search_index_strip_regex'] ) ? (string) $_POST['search_index_strip_regex'] : '';
+        if ( $strip_regex !== '' && @preg_match( $strip_regex, '' ) === false ) {
+            $strip_regex = '';
+        }
+        \update_option( 'search_index_strip_regex', $strip_regex );
+        $use_default_vc = isset( $_POST['search_index_use_default_vc'] ) ? true : false;
+        \update_option( 'search_index_use_default_vc', $use_default_vc );
         \wp_safe_redirect( \admin_url( 'tools.php?page=search-index' ) );
         exit;
     }

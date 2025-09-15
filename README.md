@@ -43,6 +43,7 @@ Notes:
 Tools → Search Index → Settings:
 - Content included in index: “Excerpt” (default) or “Full body (stripped)”.
  - Truncate to N words: integer, 0 for no truncation. Applies to both modes.
+ - Strip pattern (regex): Optional PCRE applied before HTML stripping. Example to remove WPBakery wrappers: `/\[\/?vc_[^\]]*\]/i`.
 
 ## Regeneration
 
