@@ -64,6 +64,7 @@ class Generator {
         $content = $content_mode === 'full' ? $this->makeFull( $post, $truncate ) : $this->makeExcerpt( $post, $truncate );
         $permalink = \get_permalink( $post_id );
         $root_relative = is_string( $permalink ) ? parse_url( $permalink, PHP_URL_PATH ) : '';
+        $url_field = ( is_string( $root_relative ) && $root_relative !== '' ) ? $root_relative : '/';
         $slug = $post->post_name;
 
         $cats = $this->termSlugs( $post_id, 'category' );
@@ -74,7 +75,7 @@ class Generator {
             'slug' => is_string( $slug ) ? $slug : '',
             'title' => is_string( $title ) ? $title : '',
             'content' => $content,
-            'url' => is_string( $root_relative ) ? $root_relative : '',
+            'url' => $url_field,
             'categories' => $cats,
             'tags' => $tags,
         ];
