@@ -4,7 +4,12 @@ namespace SearchIndex;
 
 class Plugin {
 
+    public const RESOURCE_OPTION = 'search_index_enable_resource_tags';
+
     public static function init() : void {
+        if ( \get_option( self::RESOURCE_OPTION, null ) === null ) {
+            \add_option( self::RESOURCE_OPTION, '1' );
+        }
         \add_action( 'save_post', [ self::class, 'maybeRebuild' ], 20, 3 );
         \add_action( 'trashed_post', [ self::class, 'rebuild' ], 20, 1 );
         \add_action( 'deleted_post', [ self::class, 'rebuild' ], 20, 1 );
@@ -13,6 +18,9 @@ class Plugin {
         \add_action( 'admin_post_search_index_rebuild', [ self::class, 'handleManualRebuild' ] );
         \add_action( 'admin_menu', [ self::class, 'registerMenu' ] );
         \add_action( 'admin_post_search_index_save', [ self::class, 'handleSaveSettings' ] );
+        \add_action( 'update_option_yoti-blog-resource-tag-settings', [ self::class, 'rebuildIfResourceExportEnabled' ], 10, 3 );
+        \add_action( 'update_option_yoti-blog-categories-settings', [ self::class, 'rebuildIfResourceExportEnabled' ], 10, 3 );
+        \add_action( 'update_option_user-profile-details', [ self::class, 'rebuildIfResourceExportEnabled' ], 10, 3 );
     }
 
     public static function activate() : void {
@@ -20,6 +28,9 @@ class Plugin {
         $existing = \get_option( 'search_index_strip_regex', null );
         if ( $existing === null || $existing === '' ) {
             \update_option( 'search_index_strip_regex', '/\\[(?:\\/)?vc_[^\\]]*\\]/i' );
+        }
+        if ( \get_option( self::RESOURCE_OPTION, null ) === null ) {
+            \add_option( self::RESOURCE_OPTION, '1' );
         }
         self::rebuild();
     }
@@ -56,6 +67,16 @@ class Plugin {
         $gen->build();
     }
 
+    public static function rebuildIfResourceExportEnabled( $old_value = null, $value = null, $option = null ) : void {
+        if ( self::isResourceExportEnabled() ) {
+            self::rebuild();
+        }
+    }
+
+    private static function isResourceExportEnabled() : bool {
+        return (bool) \get_option( self::RESOURCE_OPTION, false );
+    }
+
     public static function registerMenu() : void {
         \add_submenu_page(
             'tools.php',
@@ -89,6 +110,22 @@ class Plugin {
                 if ( isset( $data['generatedAt'] ) && is_string( $data['generatedAt'] ) ) { $generated = $data['generatedAt']; }
             }
         }
+        $resource_enabled = self::isResourceExportEnabled();
+        $resource_file = \trailingslashit( $base_dir ) . 'search/resource-tags.json';
+        $resource_url = \trailingslashit( $base_url ) . 'search/resource-tags.json';
+        $resource_exists = $resource_enabled && \file_exists( $resource_file );
+        $resource_size = $resource_exists ? (int) \filesize( $resource_file ) : 0;
+        $resource_mtime = $resource_exists ? (int) \filemtime( $resource_file ) : 0;
+        $resource_generated = '';
+        $resource_count = null;
+        if ( $resource_exists ) {
+            $resource_raw = @\file_get_contents( $resource_file );
+            $resource_data = is_string( $resource_raw ) ? \json_decode( $resource_raw, true ) : null;
+            if ( is_array( $resource_data ) ) {
+                if ( isset( $resource_data['posts'] ) && is_array( $resource_data['posts'] ) ) { $resource_count = count( $resource_data['posts'] ); }
+                if ( isset( $resource_data['generatedAt'] ) && is_string( $resource_data['generatedAt'] ) ) { $resource_generated = $resource_data['generatedAt']; }
+            }
+        }
         echo '<div class="wrap">';
         echo '<h1 class="wp-heading-inline">Search Index</h1>';
         echo '<hr class="wp-header-end" />';
@@ -102,6 +139,16 @@ class Plugin {
         echo '<tr><th scope="row">Last modified</th><td>' . ( $exists ? esc_html( \date_i18n( 'Y-m-d H:i:s', $mtime ) ) : '-' ) . '</td></tr>';
         echo '<tr><th scope="row">Version</th><td>' . ( $version !== '' ? esc_html( $version ) : '-' ) . '</td></tr>';
         echo '<tr><th scope="row">Items</th><td>' . ( is_int( $count ) ? number_format_i18n( $count ) : '-' ) . '</td></tr>';
+        echo '<tr><th scope="row">Resource tag export</th><td>' . ( $resource_enabled ? '<span class="dashicons dashicons-yes" style="color:#46b450"></span> Enabled' : '<span class="dashicons dashicons-minus" style="color:#82878c"></span> Disabled' ) . '</td></tr>';
+        if ( $resource_enabled ) {
+            echo '<tr><th scope="row">Resource dataset path</th><td>' . esc_html( $resource_file ) . '</td></tr>';
+            echo '<tr><th scope="row">Resource dataset URL</th><td>' . ( $resource_exists ? '<a href="' . esc_url( $resource_url ) . '" target="_blank" rel="noreferrer">' . esc_html( $resource_url ) . '</a>' : esc_html( $resource_url ) ) . '</td></tr>';
+            echo '<tr><th scope="row">Resource dataset status</th><td>' . ( $resource_exists ? '<span class="dashicons dashicons-yes" style="color:#46b450"></span> Exists' : '<span class="dashicons dashicons-dismiss" style="color:#dc3232"></span> Missing' ) . '</td></tr>';
+            echo '<tr><th scope="row">Resource dataset size</th><td>' . ( $resource_exists ? number_format_i18n( $resource_size ) . ' bytes' : '-' ) . '</td></tr>';
+            echo '<tr><th scope="row">Resource dataset updated</th><td>' . ( $resource_exists ? esc_html( \date_i18n( 'Y-m-d H:i:s', $resource_mtime ) ) : '-' ) . '</td></tr>';
+            echo '<tr><th scope="row">Resource dataset generatedAt</th><td>' . ( $resource_generated !== '' ? esc_html( $resource_generated ) : '-' ) . '</td></tr>';
+            echo '<tr><th scope="row">Resource dataset posts</th><td>' . ( is_int( $resource_count ) ? number_format_i18n( $resource_count ) : '-' ) . '</td></tr>';
+        }
         echo '</tbody>';
         echo '</table>';
         echo '<hr />';
@@ -128,6 +175,10 @@ class Plugin {
         echo '<tr><th scope="row">Strip pattern (regex)</th><td>';
         echo '<input name="search_index_strip_regex" type="text" value="' . esc_attr( $display_regex ) . '" class="regular-text code" /> ';
         echo '<p class="description">Optional PCRE applied before HTML stripping. Leave blank to disable.</p>';
+        echo '</td></tr>';
+        echo '<tr><th scope="row">Resource tag export</th><td>';
+        echo '<label><input type="checkbox" name="search_index_enable_resource_tags" value="1" ' . checked( $resource_enabled, true, false ) . ' /> <span>Generate JSON for blog resource tags</span></label>';
+        echo '<p class="description">Outputs uploads/search/resource-tags.json for front-end filtering.</p>';
         echo '</td></tr>';
         echo '</tbody></table>';
         submit_button( 'Save settings' );
@@ -160,6 +211,9 @@ class Plugin {
         \update_option( 'search_index_strip_regex', $strip_regex );
         $use_default_vc = isset( $_POST['search_index_use_default_vc'] ) ? true : false;
         \update_option( 'search_index_use_default_vc', $use_default_vc );
+        $resource_enabled = isset( $_POST['search_index_enable_resource_tags'] ) && (int) $_POST['search_index_enable_resource_tags'] === 1;
+        \update_option( self::RESOURCE_OPTION, $resource_enabled ? '1' : '0' );
+        self::rebuild();
         \wp_safe_redirect( \admin_url( 'tools.php?page=search-index' ) );
         exit;
     }
