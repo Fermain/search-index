@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Search Index
  * Description: Generates a minimal JSON search index for posts under uploads/search/index.json.
- * Version: 0.1.1
+ * Version: 0.1.2
  * Author: Your Team
  */
 
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'SEARCH_INDEX_PLUGIN_PATH', \plugin_dir_path( __FILE__ ) );
-define( 'SEARCH_INDEX_PLUGIN_VERSION', '0.1.0' );
+define( 'SEARCH_INDEX_PLUGIN_VERSION', '0.1.2' );
 
 require_once SEARCH_INDEX_PLUGIN_PATH . 'src/Plugin.php';
 require_once SEARCH_INDEX_PLUGIN_PATH . 'src/Generator.php';

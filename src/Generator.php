@@ -387,6 +387,13 @@ class Generator {
 
     private function buildPostSummary( \WP_Post $post ) : string {
         $content = isset( $post->post_content ) ? (string) $post->post_content : '';
+
+        if ( function_exists( 'strip_shortcode_from_content' ) && isset( $GLOBALS['filtered_shortcodes'] ) ) {
+            $content = strip_shortcode_from_content( $content, $GLOBALS['filtered_shortcodes'] );
+        } else {
+            $content = \strip_shortcodes( $content );
+        }
+
         $content = \wp_strip_all_tags( $content );
         $trimmed = \wp_trim_words( $content, 100, '' );
         return trim( preg_replace( '/\s+/', ' ', $trimmed ) );
@@ -427,20 +434,7 @@ class Generator {
             return '';
         }
 
-        return $this->normaliseImageMarkup( $html );
-    }
-
-    private function normaliseImageMarkup( string $html ) : string {
-        $callback = function( $matches ) {
-            $attr = $matches[1];
-            $quote = $matches[2];
-            $value = $matches[3];
-            $normalised = $this->normaliseUrl( $value );
-            return ' ' . $attr . '=' . $quote . $normalised . $quote;
-        };
-
-        $pattern = '/\s(srcset|src)=("|\')([^"\']+)("|\')/i';
-        return (string) \preg_replace_callback( $pattern, $callback, $html );
+        return is_string( $html ) ? $html : '';
     }
 
     private function collectResourceTagAuthors() : array {
