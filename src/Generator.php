@@ -235,7 +235,7 @@ class Generator {
             'post_ID' => $post_id,
             'post_title' => (string) $post->post_title,
             'post_description' => $summary,
-            'post_paramlink' => $this->normaliseUrl( $permalink ),
+            'post_paramlink' => $this->normaliseUrl( (string) \get_permalink( $post_id ) ),
             'post_date' => $post_date,
             'post_min_read' => $reading_time,
             'post_image' => $image_markup,
@@ -250,6 +250,7 @@ class Generator {
             'post_resource_tag_bg_color' => $resource_tag_details['color'],
             'post_resource_tag_icon' => $resource_tag_details['icon'],
             'post_resource_tag_url' => $resource_tag_details['url'],
+            'resource_tag_label' => $this->buildResourceTagLabel($resource_tag_details, $post_date),
             'post_tag' => $tag_details,
         ];
     }
@@ -388,8 +389,8 @@ class Generator {
     private function buildPostSummary( \WP_Post $post ) : string {
         $content = isset( $post->post_content ) ? (string) $post->post_content : '';
 
-        if ( function_exists( 'strip_shortcode_from_content' ) && isset( $GLOBALS['filtered_shortcodes'] ) ) {
-            $content = strip_shortcode_from_content( $content, $GLOBALS['filtered_shortcodes'] );
+        if ( function_exists( '\strip_shortcode_from_content' ) && isset( $GLOBALS['filtered_shortcodes'] ) ) {
+            $content = (string) call_user_func( '\strip_shortcode_from_content', $content, $GLOBALS['filtered_shortcodes'] );
         } else {
             $content = \strip_shortcodes( $content );
         }
@@ -397,6 +398,20 @@ class Generator {
         $content = \wp_strip_all_tags( $content );
         $trimmed = \wp_trim_words( $content, 100, '' );
         return trim( preg_replace( '/\s+/', ' ', $trimmed ) );
+    }
+
+    private function buildResourceTagLabel(array $resourceTagDetails, string $postDate) : string {
+        if ($resourceTagDetails['name'] === '') {
+            return '<div class="category-post-date"><span class="post-date">' . esc_html($postDate) . '</span></div>';
+        }
+
+        $icon = $resourceTagDetails['icon'] !== '' ? '<span class="resource-tag-icon"><img alt="Tag Icon" src="' . esc_attr($resourceTagDetails['icon']) . '" class="" height="15" width="15"></span>' : '';
+        $body = $icon . esc_html($resourceTagDetails['name']);
+        $badge = $resourceTagDetails['url'] !== ''
+            ? '<a href="' . esc_url($resourceTagDetails['url']) . '"><span class="resource-tag" style="background-color:' . esc_attr($resourceTagDetails['color']) . ';">' . $body . '</span></a>'
+            : '<span class="resource-tag" style="background-color:' . esc_attr($resourceTagDetails['color']) . ';">' . $body . '</span>';
+
+        return '<div class="category-post-date">' . $badge . '<span class="post-date">' . esc_html($postDate) . '</span></div>';
     }
 
     private function formatPostDate( \WP_Post $post ) : string {
