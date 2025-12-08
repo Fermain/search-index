@@ -93,8 +93,7 @@ class Generator {
     private function makeExcerpt( $post, int $truncate_words ) : string {
         if ( ! is_object( $post ) ) { return ''; }
         $raw = isset( $post->post_excerpt ) && $post->post_excerpt !== '' ? $post->post_excerpt : ( isset( $post->post_content ) ? $post->post_content : '' );
-        $raw = \strip_shortcodes( $raw );
-        $raw = $this->applyUserStripRegex( $raw );
+        $raw = \apply_filters( 'the_content', $raw );
         $text = \wp_strip_all_tags( $raw );
         $text = trim( preg_replace( '/\s+/', ' ', $text ) );
         if ( $truncate_words > 0 ) {
@@ -110,8 +109,8 @@ class Generator {
     private function makeFull( $post, int $truncate_words ) : string {
         if ( ! is_object( $post ) ) { return ''; }
         $raw = isset( $post->post_content ) ? $post->post_content : '';
+        $raw = \apply_filters( 'the_content', $raw );
         $raw = \strip_shortcodes( $raw );
-        $raw = $this->applyUserStripRegex( $raw );
         $text = \wp_strip_all_tags( $raw );
         $text = trim( preg_replace( '/\s+/', ' ', $text ) );
         if ( $truncate_words > 0 ) {
@@ -389,6 +388,7 @@ class Generator {
     private function buildPostSummary( \WP_Post $post ) : string {
         $content = isset( $post->post_content ) ? (string) $post->post_content : '';
 
+        $content = \apply_filters( 'the_content', $content );
         if ( function_exists( '\strip_shortcode_from_content' ) && isset( $GLOBALS['filtered_shortcodes'] ) ) {
             $content = (string) call_user_func( '\strip_shortcode_from_content', $content, $GLOBALS['filtered_shortcodes'] );
         } else {
