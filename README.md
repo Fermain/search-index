@@ -33,17 +33,14 @@ Intended for static sites exported by WP2Static (or similar). The index uses roo
 ```
 
 Notes:
-- `content` is either a 40‑word excerpt or the full stripped body (HTML removed), based on settings.
+- `content` is a 40‑word excerpt from the rendered post body (shortcodes executed, then HTML stripped).
 - Dates are intentionally omitted.
 - URLs are root‑relative.
- - Shortcodes are removed from content prior to stripping HTML.
 
 ## Settings
 
 Tools → Search Index → Settings:
-- Content included in index: “Excerpt” (default) or “Full body (stripped)”.
- - Truncate to N words: integer, 0 for no truncation. Applies to both modes.
- - Strip pattern (regex): Optional PCRE applied before HTML stripping. Example to remove WPBakery wrappers: `/\[\/?vc_[^\]]*\]/i`.
+- Resource tag export: Toggle generation of `resource-tags.json` for front-end filtering.
 
 ## Regeneration
 
