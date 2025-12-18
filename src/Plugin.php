@@ -24,11 +24,6 @@ class Plugin {
     }
 
     public static function activate() : void {
-        // Seed a sensible default strip regex if not already set
-        $existing = \get_option( 'search_index_strip_regex', null );
-        if ( $existing === null || $existing === '' ) {
-            \update_option( 'search_index_strip_regex', '/\\[(?:\\/)?vc_[^\\]]*\\]/i' );
-        }
         if ( \get_option( self::RESOURCE_OPTION, null ) === null ) {
             \add_option( self::RESOURCE_OPTION, '1' );
         }
@@ -153,29 +148,10 @@ class Plugin {
         echo '</table>';
         echo '<hr />';
         echo '<h2>Settings</h2>';
-        $mode = \get_option( 'search_index_content_mode', 'excerpt' );
-        $truncate = (int) \get_option( 'search_index_truncate_words', 40 );
-        $strip_regex = (string) \get_option( 'search_index_strip_regex', '' );
-        $display_regex = $strip_regex !== '' ? $strip_regex : '/\\\[(?:\\\/)?vc_[^\\\]]*\\\]/i';
         echo '<form method="post" action="' . esc_url( \admin_url( 'admin-post.php' ) ) . '" class="card">';
         echo '<input type="hidden" name="action" value="search_index_save" />';
         \wp_nonce_field( 'search-index-save' );
         echo '<table class="form-table" role="presentation"><tbody>';
-        echo '<tr><th scope="row">Content included in index</th><td>';
-        echo '<fieldset>';
-        echo '<label><input type="radio" name="search_index_content_mode" value="excerpt" ' . checked( $mode, 'excerpt', false ) . ' /> <span>Excerpt (default)</span></label><br />';
-        echo '<label><input type="radio" name="search_index_content_mode" value="full" ' . checked( $mode, 'full', false ) . ' /> <span>Full body (stripped)</span></label>';
-        echo '<p class="description">Choose the content field exposed in index.json. Dates are omitted; links are root-relative.</p>';
-        echo '</fieldset>';
-        echo '</td></tr>';
-        echo '<tr><th scope="row">Truncate to N words</th><td>';
-        echo '<input name="search_index_truncate_words" type="number" min="0" step="1" value="' . esc_attr( (string) $truncate ) . '" class="small-text" /> ';
-        echo '<p class="description">0 for no truncation. Applies to both excerpt and full modes.</p>';
-        echo '</td></tr>';
-        echo '<tr><th scope="row">Strip pattern (regex)</th><td>';
-        echo '<input name="search_index_strip_regex" type="text" value="' . esc_attr( $display_regex ) . '" class="regular-text code" /> ';
-        echo '<p class="description">Optional PCRE applied before HTML stripping. Leave blank to disable.</p>';
-        echo '</td></tr>';
         echo '<tr><th scope="row">Resource tag export</th><td>';
         echo '<label><input type="checkbox" name="search_index_enable_resource_tags" value="1" ' . checked( $resource_enabled, true, false ) . ' /> <span>Generate JSON for blog resource tags</span></label>';
         echo '<p class="description">Outputs uploads/search/resource-tags.json for front-end filtering.</p>';
@@ -198,19 +174,6 @@ class Plugin {
             \wp_die( 'Unauthorized' );
         }
         \check_admin_referer( 'search-index-save' );
-        $mode = isset( $_POST['search_index_content_mode'] ) ? (string) $_POST['search_index_content_mode'] : 'excerpt';
-        if ( $mode !== 'excerpt' && $mode !== 'full' ) { $mode = 'excerpt'; }
-        \update_option( 'search_index_content_mode', $mode );
-        $truncate = isset( $_POST['search_index_truncate_words'] ) ? (int) $_POST['search_index_truncate_words'] : 40;
-        if ( $truncate < 0 ) { $truncate = 0; }
-        \update_option( 'search_index_truncate_words', $truncate );
-        $strip_regex = isset( $_POST['search_index_strip_regex'] ) ? (string) $_POST['search_index_strip_regex'] : '';
-        if ( $strip_regex !== '' && @preg_match( $strip_regex, '' ) === false ) {
-            $strip_regex = '';
-        }
-        \update_option( 'search_index_strip_regex', $strip_regex );
-        $use_default_vc = isset( $_POST['search_index_use_default_vc'] ) ? true : false;
-        \update_option( 'search_index_use_default_vc', $use_default_vc );
         $resource_enabled = isset( $_POST['search_index_enable_resource_tags'] ) && (int) $_POST['search_index_enable_resource_tags'] === 1;
         \update_option( self::RESOURCE_OPTION, $resource_enabled ? '1' : '0' );
         self::rebuild();

@@ -68,9 +68,7 @@ class Generator {
         }
 
         $title = \wp_strip_all_tags( \get_the_title( $post_id ) );
-        $content_mode = \get_option( 'search_index_content_mode', 'excerpt' );
-        $truncate = (int) \get_option( 'search_index_truncate_words', 40 );
-        $content = $content_mode === 'full' ? $this->makeFull( $post, $truncate ) : $this->makeExcerpt( $post, $truncate );
+        $content = $this->getCleanContent( $post, 40 );
         $permalink = \get_permalink( $post_id );
         $root_relative = is_string( $permalink ) ? parse_url( $permalink, PHP_URL_PATH ) : '';
         $url_field = ( is_string( $root_relative ) && $root_relative !== '' ) ? $root_relative : '/';
@@ -90,44 +88,31 @@ class Generator {
         ];
     }
 
-    private function makeExcerpt( $post, int $truncate_words ) : string {
-        if ( ! is_object( $post ) ) { return ''; }
-        $raw = isset( $post->post_excerpt ) && $post->post_excerpt !== '' ? $post->post_excerpt : ( isset( $post->post_content ) ? $post->post_content : '' );
-        $raw = \apply_filters( 'the_content', $raw );
-        $text = \wp_strip_all_tags( $raw );
+    private function getCleanContent( \WP_Post $post, int $word_limit ) : string {
+        $original_post = isset( $GLOBALS['post'] ) ? $GLOBALS['post'] : null;
+
+        $GLOBALS['post'] = $post;
+        \setup_postdata( $post );
+
+        $rendered = \apply_filters( 'the_content', $post->post_content );
+
+        \wp_reset_postdata();
+        if ( $original_post !== null ) {
+            $GLOBALS['post'] = $original_post;
+        }
+
+        $text = \wp_strip_all_tags( $rendered );
+        $text = \html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
         $text = trim( preg_replace( '/\s+/', ' ', $text ) );
-        if ( $truncate_words > 0 ) {
+
+        if ( $word_limit > 0 ) {
             $words = explode( ' ', $text );
-            if ( count( $words ) > $truncate_words ) {
-                $words = array_slice( $words, 0, $truncate_words );
+            if ( count( $words ) > $word_limit ) {
+                $words = array_slice( $words, 0, $word_limit );
                 $text = implode( ' ', $words ) . '…';
             }
         }
-        return $text;
-    }
 
-    private function makeFull( $post, int $truncate_words ) : string {
-        if ( ! is_object( $post ) ) { return ''; }
-        $raw = isset( $post->post_content ) ? $post->post_content : '';
-        $raw = \apply_filters( 'the_content', $raw );
-        $raw = \strip_shortcodes( $raw );
-        $text = \wp_strip_all_tags( $raw );
-        $text = trim( preg_replace( '/\s+/', ' ', $text ) );
-        if ( $truncate_words > 0 ) {
-            $words = explode( ' ', $text );
-            if ( count( $words ) > $truncate_words ) {
-                $words = array_slice( $words, 0, $truncate_words );
-                $text = implode( ' ', $words ) . '…';
-            }
-        }
-        return $text;
-    }
-
-    private function applyUserStripRegex( string $text ) : string {
-        $pattern = (string) \get_option( 'search_index_strip_regex', '' );
-        if ( $pattern !== '' ) {
-            $text = (string) @preg_replace( $pattern, '', $text );
-        }
         return $text;
     }
 
@@ -386,18 +371,7 @@ class Generator {
     }
 
     private function buildPostSummary( \WP_Post $post ) : string {
-        $content = isset( $post->post_content ) ? (string) $post->post_content : '';
-
-        $content = \apply_filters( 'the_content', $content );
-        if ( function_exists( '\strip_shortcode_from_content' ) && isset( $GLOBALS['filtered_shortcodes'] ) ) {
-            $content = (string) call_user_func( '\strip_shortcode_from_content', $content, $GLOBALS['filtered_shortcodes'] );
-        } else {
-            $content = \strip_shortcodes( $content );
-        }
-
-        $content = \wp_strip_all_tags( $content );
-        $trimmed = \wp_trim_words( $content, 100, '' );
-        return trim( preg_replace( '/\s+/', ' ', $trimmed ) );
+        return $this->getCleanContent( $post, 100 );
     }
 
     private function buildResourceTagLabel(array $resourceTagDetails, string $postDate) : string {
