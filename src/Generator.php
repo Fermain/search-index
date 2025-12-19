@@ -103,6 +103,7 @@ class Generator {
 
         $text = \wp_strip_all_tags( $rendered );
         $text = \html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+        $text = preg_replace( '/\[[^\]]+\]/', '', $text );
         $text = trim( preg_replace( '/\s+/', ' ', $text ) );
 
         if ( $word_limit > 0 ) {
