@@ -502,22 +502,11 @@ class Generator {
     }
 
     private function normaliseUrl( string $url ) : string {
-        if ( $url === '' ) {
-            return '';
-        }
-        if ( strpos( $url, 'data:' ) === 0 ) {
-            return $url;
-        }
-
-        $relative = \wp_make_link_relative( $url );
-        return is_string( $relative ) && $relative !== '' ? $relative : $url;
+        return $url;
     }
 
     private function normaliseUrlIfAsset( string $url ) : string {
-        if ( $url === '' || strpos( $url, 'data:' ) === 0 ) {
-            return $url;
-        }
-        return $this->normaliseUrl( $url );
+        return $url;
     }
 
     private function path() : object {
