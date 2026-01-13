@@ -503,7 +503,13 @@ class Generator {
 
     private function getSiteHost() : string {
         if ( $this->site_host === null ) {
-            $this->site_host = (string) parse_url( \home_url(), PHP_URL_HOST );
+            $url = \home_url();
+            $host = (string) parse_url( $url, PHP_URL_HOST );
+            $port = parse_url( $url, PHP_URL_PORT );
+            if ( $port ) {
+                $host .= ':' . $port;
+            }
+            $this->site_host = $host;
         }
         return $this->site_host;
     }
@@ -516,8 +522,13 @@ class Generator {
         $host = $this->getSiteHost();
         if ( $host !== '' && strpos( $url, $host ) !== false ) {
             $url_host = (string) parse_url( $url, PHP_URL_HOST );
+            $url_port = parse_url( $url, PHP_URL_PORT );
+            if ( $url_port ) {
+                $url_host .= ':' . $url_port;
+            }
+
             if ( $url_host === $host ) {
-                $relative = (string) preg_replace( '|https?://' . preg_quote( $host ) . '|i', '', $url );
+                $relative = (string) preg_replace( '|https?://' . preg_quote( $host ) . '(?=[/ \s"\']|$)|i', '', $url );
                 return ( $relative === '' && $url !== '' ) ? '/' : $relative;
             }
         }
@@ -533,8 +544,13 @@ class Generator {
         $host = $this->getSiteHost();
         if ( $host !== '' && strpos( $url, $host ) !== false ) {
             $url_host = (string) parse_url( $url, PHP_URL_HOST );
+            $url_port = parse_url( $url, PHP_URL_PORT );
+            if ( $url_port ) {
+                $url_host .= ':' . $url_port;
+            }
+
             if ( $url_host === $host ) {
-                return (string) preg_replace( '|https?://' . preg_quote( $host ) . '|i', '', $url );
+                return (string) preg_replace( '|https?://' . preg_quote( $host ) . '(?=[/ \s"\']|$)|i', '', $url );
             }
         }
 
@@ -550,8 +566,21 @@ class Generator {
             return $html;
         }
 
-        $pattern = '|https?://' . preg_quote( $host ) . '|i';
-        return (string) preg_replace( $pattern, '', $html );
+        $callback = function( $matches ) use ( $host ) {
+            $url = $matches[0];
+            $url_host = (string) parse_url( $url, PHP_URL_HOST );
+            $url_port = parse_url( $url, PHP_URL_PORT );
+            if ( $url_port ) {
+                $url_host .= ':' . $url_port;
+            }
+
+            if ( $url_host === $host ) {
+                return (string) preg_replace( '|https?://' . preg_quote( $host ) . '(?=[/ \s"\']|$)|i', '', $url );
+            }
+            return $url;
+        };
+
+        return (string) preg_replace_callback( '|https?://[^/^\s^"^\']+|i', $callback, $html );
     }
 
     private function path() : object {

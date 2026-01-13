@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'SEARCH_INDEX_PLUGIN_PATH', \plugin_dir_path( __FILE__ ) );
-define( 'SEARCH_INDEX_PLUGIN_VERSION', '0.3.0' );
+define( 'SEARCH_INDEX_PLUGIN_VERSION', '0.3.1' );
 
 require_once SEARCH_INDEX_PLUGIN_PATH . 'src/Plugin.php';
 require_once SEARCH_INDEX_PLUGIN_PATH . 'src/Generator.php';
