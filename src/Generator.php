@@ -69,9 +69,7 @@ class Generator {
 
         $title = \wp_strip_all_tags( \get_the_title( $post_id ) );
         $content = $this->getCleanContent( $post, 40 );
-        $permalink = \get_permalink( $post_id );
-        $root_relative = is_string( $permalink ) ? parse_url( $permalink, PHP_URL_PATH ) : '';
-        $url_field = ( is_string( $root_relative ) && $root_relative !== '' ) ? $root_relative : '/';
+        $url_field = $this->normaliseUrl( (string) \get_permalink( $post_id ) );
         $slug = $post->post_name;
 
         $cats = $this->termSlugs( $post_id, 'category' );
@@ -424,7 +422,7 @@ class Generator {
             return '';
         }
 
-        return is_string( $html ) ? $html : '';
+        return $this->normaliseHtml( $html );
     }
 
     private function collectResourceTagAuthors() : array {
@@ -502,11 +500,27 @@ class Generator {
     }
 
     private function normaliseUrl( string $url ) : string {
-        return $url;
+        if ( $url === '' ) {
+            return '';
+        }
+
+        $relative = (string) \wp_make_link_relative( $url );
+        return ( $relative === '' && $url !== '' ) ? '/' : $relative;
     }
 
     private function normaliseUrlIfAsset( string $url ) : string {
-        return $url;
+        if ( $url === '' ) {
+            return '';
+        }
+
+        return (string) \wp_make_link_relative( $url );
+    }
+
+    private function normaliseHtml( string $html ) : string {
+        if ( $html === '' ) {
+            return '';
+        }
+        return (string) preg_replace( '|https?://[^/^\s^"^\']+|i', '', $html );
     }
 
     private function path() : object {
