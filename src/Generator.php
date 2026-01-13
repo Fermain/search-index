@@ -4,6 +4,8 @@ namespace SearchIndex;
 
 class Generator {
 
+    private ?string $site_host = null;
+
     public function build() : void {
         $this->buildSearchIndex();
 
@@ -499,13 +501,28 @@ class Generator {
         return is_array( $settings ) ? $settings : [];
     }
 
+    private function getSiteHost() : string {
+        if ( $this->site_host === null ) {
+            $this->site_host = (string) parse_url( \home_url(), PHP_URL_HOST );
+        }
+        return $this->site_host;
+    }
+
     private function normaliseUrl( string $url ) : string {
         if ( $url === '' ) {
             return '';
         }
 
-        $relative = (string) \wp_make_link_relative( $url );
-        return ( $relative === '' && $url !== '' ) ? '/' : $relative;
+        $host = $this->getSiteHost();
+        if ( $host !== '' && strpos( $url, $host ) !== false ) {
+            $url_host = (string) parse_url( $url, PHP_URL_HOST );
+            if ( $url_host === $host ) {
+                $relative = (string) preg_replace( '|https?://' . preg_quote( $host ) . '|i', '', $url );
+                return ( $relative === '' && $url !== '' ) ? '/' : $relative;
+            }
+        }
+
+        return $url;
     }
 
     private function normaliseUrlIfAsset( string $url ) : string {
@@ -513,14 +530,28 @@ class Generator {
             return '';
         }
 
-        return (string) \wp_make_link_relative( $url );
+        $host = $this->getSiteHost();
+        if ( $host !== '' && strpos( $url, $host ) !== false ) {
+            $url_host = (string) parse_url( $url, PHP_URL_HOST );
+            if ( $url_host === $host ) {
+                return (string) preg_replace( '|https?://' . preg_quote( $host ) . '|i', '', $url );
+            }
+        }
+
+        return $url;
     }
 
     private function normaliseHtml( string $html ) : string {
         if ( $html === '' ) {
             return '';
         }
-        return (string) preg_replace( '|https?://[^/^\s^"^\']+|i', '', $html );
+        $host = $this->getSiteHost();
+        if ( $host === '' ) {
+            return $html;
+        }
+
+        $pattern = '|https?://' . preg_quote( $host ) . '|i';
+        return (string) preg_replace( $pattern, '', $html );
     }
 
     private function path() : object {
