@@ -16,7 +16,8 @@ define( 'SEARCH_INDEX_PLUGIN_VERSION', '0.2.3' );
 require_once SEARCH_INDEX_PLUGIN_PATH . 'src/Plugin.php';
 require_once SEARCH_INDEX_PLUGIN_PATH . 'src/Generator.php';
 
-\add_action( 'plugins_loaded', function() {
+\add_action( 'plugins_loaded', function()
+{
     \SearchIndex\Plugin::init();
 } );
 
