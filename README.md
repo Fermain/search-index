@@ -47,6 +47,21 @@ Tools → Search Index → Settings:
 - Automatically rebuilds when posts are published/trashed or edited (excluding revisions/autosaves).
 - You can manually rebuild via the “Rebuild index” button.
 
+## Development
+
+### Running Tests
+
+This plugin uses PHPUnit for unit testing. To run the tests:
+
+1. Install dependencies:
+   ```bash
+   composer install
+   ```
+2. Run the test suite:
+   ```bash
+   ./vendor/bin/phpunit
+   ```
+
 ## Notes for large sites
 
 - The index currently loads all published posts in one query. If your site has many posts, consider sharding or adding pagination logic.
