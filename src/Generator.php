@@ -520,41 +520,30 @@ class Generator {
         }
 
         $host = $this->getSiteHost();
-        if ( $host !== '' && strpos( $url, $host ) !== false ) {
-            $url_host = (string) parse_url( $url, PHP_URL_HOST );
-            $url_port = parse_url( $url, PHP_URL_PORT );
-            if ( $url_port ) {
-                $url_host .= ':' . $url_port;
-            }
+        $url_host = (string) parse_url( $url, PHP_URL_HOST );
+        $url_port = parse_url( $url, PHP_URL_PORT );
+        $full_url_host = $url_host . ( $url_port ? ':' . $url_port : '' );
 
-            if ( $url_host === $host ) {
-                $relative = (string) preg_replace( '|https?://' . preg_quote( $host ) . '(?=[/ \s"\']|$)|i', '', $url );
-                return ( $relative === '' && $url !== '' ) ? '/' : $relative;
+        if ( $full_url_host !== '' && $full_url_host === $host ) {
+            $path = (string) parse_url( $url, PHP_URL_PATH );
+            $query = (string) parse_url( $url, PHP_URL_QUERY );
+            $fragment = (string) parse_url( $url, PHP_URL_FRAGMENT );
+
+            $relative = $path === '' ? '/' : $path;
+            if ( $query !== '' ) {
+                $relative .= '?' . $query;
             }
+            if ( $fragment !== '' ) {
+                $relative .= '#' . $fragment;
+            }
+            return $relative;
         }
 
         return $url;
     }
 
     private function normaliseUrlIfAsset( string $url ) : string {
-        if ( $url === '' ) {
-            return '';
-        }
-
-        $host = $this->getSiteHost();
-        if ( $host !== '' && strpos( $url, $host ) !== false ) {
-            $url_host = (string) parse_url( $url, PHP_URL_HOST );
-            $url_port = parse_url( $url, PHP_URL_PORT );
-            if ( $url_port ) {
-                $url_host .= ':' . $url_port;
-            }
-
-            if ( $url_host === $host ) {
-                return (string) preg_replace( '|https?://' . preg_quote( $host ) . '(?=[/ \s"\']|$)|i', '', $url );
-            }
-        }
-
-        return $url;
+        return $this->normaliseUrl( $url );
     }
 
     private function normaliseHtml( string $html ) : string {
@@ -566,21 +555,11 @@ class Generator {
             return $html;
         }
 
-        $callback = function( $matches ) use ( $host ) {
-            $url = $matches[0];
-            $url_host = (string) parse_url( $url, PHP_URL_HOST );
-            $url_port = parse_url( $url, PHP_URL_PORT );
-            if ( $url_port ) {
-                $url_host .= ':' . $url_port;
-            }
-
-            if ( $url_host === $host ) {
-                return (string) preg_replace( '|https?://' . preg_quote( $host ) . '(?=[/ \s"\']|$)|i', '', $url );
-            }
-            return $url;
+        $callback = function( $matches ) {
+            return $this->normaliseUrl( $matches[0] );
         };
 
-        return (string) preg_replace_callback( '|https?://[^/^\s^"^\']+|i', $callback, $html );
+        return (string) preg_replace_callback( '|https?://[^\s"\'<>]+|i', $callback, $html );
     }
 
     private function path() : object {
