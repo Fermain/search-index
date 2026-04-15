@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Search Index
  * Description: Generates a minimal JSON search index for posts under uploads/search/index.json.
- * Version: 0.3.2
+ * Version: 0.3.3
  * Author: Your Team
  */
 

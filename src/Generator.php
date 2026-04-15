@@ -380,7 +380,7 @@ class Generator {
             return '<div class="category-post-date"><span class="post-date">' . esc_html($postDate) . '</span></div>';
         }
 
-        $icon = $resourceTagDetails['icon'] !== '' ? '<span class="resource-tag-icon"><img alt="Tag Icon" src="' . esc_attr($resourceTagDetails['icon']) . '" class="" height="15" width="15"></span>' : '';
+        $icon = $resourceTagDetails['icon'] !== '' ? '<span class="resource-tag-icon"><img alt="" src="' . esc_attr($resourceTagDetails['icon']) . '" class="" height="15" width="15"></span>' : '';
         $body = $icon . esc_html($resourceTagDetails['name']);
         $badge = $resourceTagDetails['url'] !== ''
             ? '<a href="' . esc_url($resourceTagDetails['url']) . '"><span class="resource-tag" style="background-color:' . esc_attr($resourceTagDetails['color']) . ';">' . $body . '</span></a>'
